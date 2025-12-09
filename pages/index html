@@ -1,11 +1,12 @@
-<!doctype html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <title>VPNGate SSTP Servers</title>
-  </head>
-  <body>
-    <h1>VPNGate SSTP Servers</h1>
-    <p>برای دیدن لیست زنده سرورها به مسیر اصلی برو (/) </p>
-  </body>
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+  <meta charset="UTF-8">
+  <title>Cloudflare Pages Test</title>
+</head>
+<body>
+  <h1>سلام شادالله 👋</h1>
+  <p>این یک تست ساده برای Cloudflare Pages است.</p>
+  <p>برای تست فانکشن به مسیر <code>/api/hello</code> برو.</p>
+</body>
 </html>
