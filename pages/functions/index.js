@@ -1,44 +1,33 @@
 export async function onRequest(context) {
   try {
-    const resp = await fetch("https://www.vpngate.net/en/")
+    const resp = await fetch("https://www.vpngate.net/api/iphone/")
     if (!resp.ok) {
-      return new Response("Failed to fetch VPNGate", { status: 502 })
+      return new Response("Failed to fetch VPNGate CSV", { status: 502 })
     }
 
-    const html = await resp.text()
-
-    // Regex برای پیدا کردن بلوک‌های سرور SSTP
-    const regexBlock = /MS-SSTP[\s\S]*?Hostname\s*:\s*([^\s<]+)[\s\S]*?Country:\s*([A-Za-z\s]+)[\s\S]*?([\d\.]+)\s*Mbps[\s\S]*?Ping:\s*([\d\.]+)\s*ms/gi
+    const text = await resp.text()
+    const lines = text.split("\n").filter(l => l && !l.startsWith("*"))
 
     const servers = []
-    let match
-    while ((match = regexBlock.exec(html)) !== null) {
-      servers.push({
-        host: match[1],
-        country: match[2].trim(),
-        bandwidth: match[3] + " Mbps",
-        ping: match[4] + " ms"
-      })
-    }
-
-    // حذف تکراری‌ها
-    const uniq = []
-    const seen = new Set()
-    for (const s of servers) {
-      if (!seen.has(s.host)) {
-        uniq.push(s)
-        seen.add(s.host)
+    for (const line of lines) {
+      const parts = line.split(",")
+      if (parts.length > 14) {
+        servers.push({
+          host: parts[1] + ":" + parts[2],   // IP:Port
+          country: parts[6],
+          bandwidth: parts[11] + " kbps",
+          ping: parts[12] + " ms"
+        })
       }
     }
 
-    // خروجی HTML
     let out = `
     <html><head><meta charset="utf-8"><title>VPNGate SSTP Servers</title></head><body>
-    <h2>VPNGate SSTP Servers</h2>
+    <h2>VPNGate SSTP Servers (from CSV)</h2>
     <table border="1" cellspacing="0" cellpadding="5">
       <tr><th>Hostname:Port</th><th>Country</th><th>Bandwidth</th><th>Ping</th></tr>
     `
-    for (const s of uniq) {
+    for (const s of servers) {
       out += `<tr><td>${s.host}</td><td>${s.country}</td><td>${s.bandwidth}</td><td>${s.ping}</td></tr>`
     }
     out += `</table></body></html>`
