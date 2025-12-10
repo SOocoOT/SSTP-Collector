@@ -11,7 +11,7 @@ export async function onRequest(context) {
     const servers = []
     for (const line of lines) {
       const parts = line.split(",")
-      if (parts.length > 14) {
+      if (parts.length > 14 && parts[14].includes("MS-SSTP")) {
         servers.push({
           host: parts[1] + ":" + parts[2],   // IP:Port
           country: parts[6],
@@ -23,7 +23,7 @@ export async function onRequest(context) {
 
     let out = `
     <html><head><meta charset="utf-8"><title>VPNGate SSTP Servers</title></head><body>
-    <h2>VPNGate SSTP Servers (from CSV)</h2>
+    <h2>VPNGate SSTP Servers (CSV)</h2>
     <table border="1" cellspacing="0" cellpadding="5">
       <tr><th>Hostname:Port</th><th>Country</th><th>Bandwidth</th><th>Ping</th></tr>
     `
