@@ -7,21 +7,17 @@ export async function onRequest(context) {
 
     const html = await resp.text()
 
-    // Regex برای پیدا کردن hostname های SSTP
-    const regexHost = /SSTP\s*Hostname\s*:\s*([^\s<]+)/gi
-    const regexCountry = /Country:\s*([A-Za-z\s]+)/gi
-    const regexBandwidth = /([\d\.]+)\s*Mbps/gi
-    const regexPing = /Ping:\s*([\d\.]+)\s*ms/gi
+    // Regex برای پیدا کردن بلوک‌های سرور SSTP
+    const regexBlock = /MS-SSTP[\s\S]*?Hostname\s*:\s*([^\s<]+)[\s\S]*?Country:\s*([A-Za-z\s]+)[\s\S]*?([\d\.]+)\s*Mbps[\s\S]*?Ping:\s*([\d\.]+)\s*ms/gi
 
     const servers = []
     let match
-
-    while ((match = regexHost.exec(html)) !== null) {
+    while ((match = regexBlock.exec(html)) !== null) {
       servers.push({
         host: match[1],
-        country: "-",   // بعداً می‌تونیم با regexCountry پر کنیم
-        bandwidth: "-", // بعداً می‌تونیم با regexBandwidth پر کنیم
-        ping: "-"       // بعداً می‌تونیم با regexPing پر کنیم
+        country: match[2].trim(),
+        bandwidth: match[3] + " Mbps",
+        ping: match[4] + " ms"
       })
     }
 
