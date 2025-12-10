@@ -5,34 +5,50 @@ export async function onRequest(context) {
       return new Response("Failed to fetch VPNGate CSV", { status: 502 })
     }
 
-    const text = await resp.text()
-    const lines = text.split("\n").filter(l => l && !l.startsWith("*"))
+    const raw = await resp.text()
+    const lines = raw.split("\n").map(l => l.trim()).filter(l => l && !l.startsWith("*"))
 
-    const servers = []
-    for (const line of lines) {
-      const parts = line.split(",")
-      if (parts.length > 14 && /MS-?SSTP/i.test(parts[14])) {
-        servers.push({
-          host: parts[1] + ":" + parts[2],
-          country: parts[6],
-          bandwidth: parseInt(parts[11], 10) || 0,
-          ping: parseInt(parts[12], 10) || 0
-        })
-      }
+    if (lines.length < 2) {
+      return new Response("CSV empty or invalid", { status: 500 })
     }
 
-    // سورت: اول کشور، بعد سرعت نزولی
-    servers.sort((a, b) => {
-      if (a.country < b.country) return -1
-      if (a.country > b.country) return 1
-      return b.bandwidth - a.bandwidth
-    })
+    // هدر اولین خطه
+    const headers = lines[0].split(",")
+    const idxHost = headers.indexOf("HostName")
+    const idxIP = headers.indexOf("IP")
+    const idxCountry = headers.indexOf("CountryLong")
+    const idxSpeed = headers.indexOf("Speed")
+    const idxPing = headers.indexOf("Ping")
+    const idxProto = headers.findIndex(h => h.toLowerCase().includes("vpn"))
+
+    const servers = []
+    for (let i = 1; i < lines.length; i++) {
+      const parts = lines[i].split(",")
+      if (parts.length < headers.length) continue
+
+      const proto = idxProto !== -1 ? parts[idxProto] : ""
+      if (!/MS-?SSTP/i.test(proto)) continue
+
+      const host = idxHost !== -1 ? parts[idxHost] : (idxIP !== -1 ? parts[idxIP] : "")
+      if (!host) continue
+
+      servers.push({
+        host: host.includes(":") ? host : host + ":443",
+        country: idxCountry !== -1 ? parts[idxCountry] : "-",
+        bandwidth: idxSpeed !== -1 ? parts[idxSpeed] + " kbps" : "-",
+        ping: idxPing !== -1 ? parts[idxPing] + " ms" : "-"
+      })
+    }
+
+    if (servers.length === 0) {
+      return new Response("No SSTP servers found", { status: 404 })
+    }
 
     let out = `
     <html><head><meta charset="utf-8"><title>VPNGate SSTP Servers</title></head><body>
-    <h2>VPNGate SSTP Servers (CSV)</h2>
+    <h2>VPNGate SSTP Servers</h2>
     <table border="1" cellspacing="0" cellpadding="5">
-      <tr><th>Hostname:Port</th><th>Country</th><th>Bandwidth (kbps)</th><th>Ping (ms)</th></tr>
+      <tr><th>Hostname:Port</th><th>Country</th><th>Bandwidth</th><th>Ping</th></tr>
     `
     for (const s of servers) {
       out += `<tr><td>${s.host}</td><td>${s.country}</td><td>${s.bandwidth}</td><td>${s.ping}</td></tr>`
